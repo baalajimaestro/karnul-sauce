@@ -413,8 +413,8 @@ static int simple_lmk_init_set(const char *val, const struct kernel_param *kp)
 	struct task_struct *thread;
 
 	if (!atomic_cmpxchg(&init_done, 0, 1)) {
-		thread = kthread_run(simple_lmk_reclaim_thread, NULL,
-				     "simple_lmkd");
+		thread = kthread_run_perf_critical(simple_lmk_reclaim_thread,
+						   NULL, "simple_lmkd");
 		BUG_ON(IS_ERR(thread));
 	}
 >>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
