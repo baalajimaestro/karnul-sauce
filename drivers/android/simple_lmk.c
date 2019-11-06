@@ -5,7 +5,10 @@
 
 #define pr_fmt(fmt) "simple_lmk: " fmt
 
+<<<<<<< HEAD
 #include <linux/delay.h>
+=======
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 #include <linux/kthread.h>
 #include <linux/mm.h>
 #include <linux/moduleparam.h>
@@ -67,8 +70,13 @@ static const short adj_prio[] = {
 static struct victim_info victims[MAX_VICTIMS];
 static DECLARE_WAIT_QUEUE_HEAD(oom_waitq);
 static DECLARE_COMPLETION(reclaim_done);
+<<<<<<< HEAD
 static int victims_to_kill;
 static bool needs_reclaim;
+=======
+static atomic_t victims_to_kill = ATOMIC_INIT(0);
+static atomic_t needs_reclaim = ATOMIC_INIT(0);
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 
 static int victim_size_cmp(const void *lhs_ptr, const void *rhs_ptr)
 {
@@ -78,21 +86,33 @@ static int victim_size_cmp(const void *lhs_ptr, const void *rhs_ptr)
 	return rhs->size - lhs->size;
 }
 
+<<<<<<< HEAD
 static bool vtsk_is_duplicate(struct victim_info *varr, int vlen,
 			      struct task_struct *vtsk)
+=======
+static bool vtsk_is_duplicate(int vlen, struct task_struct *vtsk)
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 {
 	int i;
 
 	for (i = 0; i < vlen; i++) {
+<<<<<<< HEAD
 		if (same_thread_group(varr[i].tsk, vtsk))
+=======
+		if (same_thread_group(victims[i].tsk, vtsk))
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 			return true;
 	}
 
 	return false;
 }
 
+<<<<<<< HEAD
 static unsigned long find_victims(struct victim_info *varr, int *vindex,
 				  int vmaxlen, short target_adj)
+=======
+static unsigned long find_victims(int *vindex, short target_adj)
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 {
 	unsigned long pages_found = 0;
 	int old_vindex = *vindex;
@@ -111,7 +131,11 @@ static unsigned long find_victims(struct victim_info *varr, int *vindex,
 		 * trying to lock a task that we locked earlier.
 		 */
 		if (READ_ONCE(tsk->signal->oom_score_adj) != target_adj ||
+<<<<<<< HEAD
 		    vtsk_is_duplicate(varr, *vindex, tsk))
+=======
+		    vtsk_is_duplicate(*vindex, tsk))
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 			continue;
 
 		vtsk = find_lock_task_mm(tsk);
@@ -119,6 +143,7 @@ static unsigned long find_victims(struct victim_info *varr, int *vindex,
 			continue;
 
 		/* Store this potential victim away for later */
+<<<<<<< HEAD
 		varr[*vindex].tsk = vtsk;
 		varr[*vindex].mm = vtsk->mm;
 		varr[*vindex].size = get_mm_rss(vtsk->mm);
@@ -128,6 +153,17 @@ static unsigned long find_victims(struct victim_info *varr, int *vindex,
 
 		/* Make sure there's space left in the victim array */
 		if (++*vindex == vmaxlen)
+=======
+		victims[*vindex].tsk = vtsk;
+		victims[*vindex].mm = vtsk->mm;
+		victims[*vindex].size = get_mm_rss(vtsk->mm);
+
+		/* Keep track of the number of pages that have been found */
+		pages_found += victims[*vindex].size;
+
+		/* Make sure there's space left in the victim array */
+		if (++*vindex == MAX_VICTIMS)
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 			break;
 	}
 
@@ -136,14 +172,23 @@ static unsigned long find_victims(struct victim_info *varr, int *vindex,
 	 * the larger ones first.
 	 */
 	if (pages_found)
+<<<<<<< HEAD
 		sort(&varr[old_vindex], *vindex - old_vindex, sizeof(*varr),
 		     victim_size_cmp, NULL);
+=======
+		sort(&victims[old_vindex], *vindex - old_vindex,
+		     sizeof(*victims), victim_size_cmp, NULL);
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 
 	return pages_found;
 }
 
+<<<<<<< HEAD
 static int process_victims(struct victim_info *varr, int vlen,
 			   unsigned long pages_needed)
+=======
+static int process_victims(int vlen, unsigned long pages_needed)
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 {
 	unsigned long pages_found = 0;
 	int i, nr_to_kill = 0;
@@ -181,8 +226,12 @@ static void scan_and_kill(unsigned long pages_needed)
 	 */
 	read_lock(&tasklist_lock);
 	for (i = 0; i < ARRAY_SIZE(adj_prio); i++) {
+<<<<<<< HEAD
 		pages_found += find_victims(victims, &nr_victims, MAX_VICTIMS,
 					    adj_prio[i]);
+=======
+		pages_found += find_victims(&nr_victims, adj_prio[i]);
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 		if (pages_found >= pages_needed || nr_victims == MAX_VICTIMS)
 			break;
 	}
@@ -193,7 +242,11 @@ static void scan_and_kill(unsigned long pages_needed)
 		return;
 
 	/* First round of victim processing to weed out unneeded victims */
+<<<<<<< HEAD
 	nr_to_kill = process_victims(victims, nr_victims, pages_needed);
+=======
+	nr_to_kill = process_victims(nr_victims, pages_needed);
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 
 	/*
 	 * Try to kill as few of the chosen victims as possible by sorting the
@@ -203,10 +256,17 @@ static void scan_and_kill(unsigned long pages_needed)
 	sort(victims, nr_to_kill, sizeof(*victims), victim_size_cmp, NULL);
 
 	/* Second round of victim processing to finally select the victims */
+<<<<<<< HEAD
 	nr_to_kill = process_victims(victims, nr_to_kill, pages_needed);
 
 	/* Kill the victims */
 	WRITE_ONCE(victims_to_kill, nr_to_kill);
+=======
+	nr_to_kill = process_victims(nr_to_kill, pages_needed);
+
+	/* Kill the victims */
+	atomic_set_release(&victims_to_kill, nr_to_kill);
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 	for (i = 0; i < nr_to_kill; i++) {
 		struct victim_info *victim = &victims[i];
 		struct task_struct *vtsk = victim->tsk;
@@ -250,6 +310,7 @@ static int simple_lmk_reclaim_thread(void *data)
 	sched_setscheduler_nocheck(current, SCHED_FIFO, &sched_max_rt_prio);
 
 	while (1) {
+<<<<<<< HEAD
 		bool should_stop;
 
 		wait_event(oom_waitq, (should_stop = kthread_should_stop()) ||
@@ -269,6 +330,10 @@ static int simple_lmk_reclaim_thread(void *data)
 			scan_and_kill(MIN_FREE_PAGES);
 			msleep(20);
 		} while (READ_ONCE(needs_reclaim));
+=======
+		wait_event(oom_waitq, atomic_add_unless(&needs_reclaim, -1, 0));
+		scan_and_kill(MIN_FREE_PAGES);
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 	}
 
 	return 0;
@@ -276,6 +341,7 @@ static int simple_lmk_reclaim_thread(void *data)
 
 void simple_lmk_decide_reclaim(int kswapd_priority)
 {
+<<<<<<< HEAD
 	if (kswapd_priority != CONFIG_ANDROID_SIMPLE_LMK_AGGRESSION)
 		return;
 
@@ -286,6 +352,20 @@ void simple_lmk_decide_reclaim(int kswapd_priority)
 void simple_lmk_stop_reclaim(void)
 {
 	WRITE_ONCE(needs_reclaim, false);
+=======
+	if (kswapd_priority == CONFIG_ANDROID_SIMPLE_LMK_AGGRESSION) {
+		int v, v1;
+
+		for (v = 0;; v = v1) {
+			v1 = atomic_cmpxchg(&needs_reclaim, v, v + 1);
+			if (likely(v1 == v)) {
+				if (!v)
+					wake_up(&oom_waitq);
+				break;
+			}
+		}
+	}
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 }
 
 void simple_lmk_mm_freed(struct mm_struct *mm)
@@ -293,11 +373,19 @@ void simple_lmk_mm_freed(struct mm_struct *mm)
 	static atomic_t nr_killed = ATOMIC_INIT(0);
 	int i, nr_to_kill;
 
+<<<<<<< HEAD
 	nr_to_kill = READ_ONCE(victims_to_kill);
 	for (i = 0; i < nr_to_kill; i++) {
 		if (cmpxchg(&victims[i].mm, mm, NULL) == mm) {
 			if (atomic_inc_return(&nr_killed) == nr_to_kill) {
 				WRITE_ONCE(victims_to_kill, 0);
+=======
+	nr_to_kill = atomic_read_acquire(&victims_to_kill);
+	for (i = 0; i < nr_to_kill; i++) {
+		if (cmpxchg(&victims[i].mm, mm, NULL) == mm) {
+			if (atomic_inc_return(&nr_killed) == nr_to_kill) {
+				atomic_set(&victims_to_kill, 0);
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 				nr_killed = (atomic_t)ATOMIC_INIT(0);
 				complete(&reclaim_done);
 			}
@@ -309,6 +397,7 @@ void simple_lmk_mm_freed(struct mm_struct *mm)
 /* Initialize Simple LMK when lmkd in Android writes to the minfree parameter */
 static int simple_lmk_init_set(const char *val, const struct kernel_param *kp)
 {
+<<<<<<< HEAD
 	static bool init_done;
 	struct task_struct *thread;
 
@@ -319,6 +408,16 @@ static int simple_lmk_init_set(const char *val, const struct kernel_param *kp)
 					   "simple_lmkd");
 	BUG_ON(IS_ERR(thread));
 
+=======
+	static atomic_t init_done = ATOMIC_INIT(0);
+	struct task_struct *thread;
+
+	if (!atomic_cmpxchg(&init_done, 0, 1)) {
+		thread = kthread_run(simple_lmk_reclaim_thread, NULL,
+				     "simple_lmkd");
+		BUG_ON(IS_ERR(thread));
+	}
+>>>>>>> 883e38b6df46... simple_lmk: Introduce Simple Low Memory Killer for Android
 	return 0;
 }
 
