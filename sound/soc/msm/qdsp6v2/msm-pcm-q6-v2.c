@@ -844,6 +844,7 @@ static int msm_pcm_playback_close(struct snd_pcm_substream *substream)
 	struct msm_audio *prtd = runtime->private_data;
 	struct msm_plat_data *pdata;
 	uint32_t timeout;
+	struct msm_plat_data *pdata = NULL;
 	int dir = 0;
 	int ret = 0;
 
@@ -2307,6 +2308,7 @@ static int msm_pcm_channel_mixer_cfg_ctl_put(struct snd_kcontrol *kcontrol,
 		prtd = substream->runtime->private_data;
 		if (!prtd) {
 			pr_err("%s find invalid prtd fail\n", __func__);
+			mutex_unlock(&pdata->lock);
 			return -EINVAL;
 		}
 
@@ -2319,6 +2321,7 @@ static int msm_pcm_channel_mixer_cfg_ctl_put(struct snd_kcontrol *kcontrol,
 					chmixer_pspd);
 		}
 	}
+	mutex_unlock(&pdata->lock);
 done:
 	mutex_unlock(&pdata->lock);
 	return ret;
